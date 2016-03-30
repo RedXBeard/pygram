@@ -23,7 +23,7 @@ class PyGramForm(npyscreen.Form):
             lambda x: (len(x.print_name) > max_width_ondialog and
                        x.print_name[:max_width_ondialog] + '...' or
                        x.print_name),
-            TG.sender.dialog_list()))
+            reversed(TG.sender.dialog_list())))
 
 
 class PyGramApp(npyscreen.NPSAppManaged):
