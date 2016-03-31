@@ -2,18 +2,40 @@
 
 import logging
 import textwrap
+import threading
 from datetime import datetime
 
 import npyscreen
 from DictObject import DictObject
 from npyscreen import wgwidget as widget
 from pytg import Telegram
+from pytg.utils import coroutine
 
 from config import TELEGRAM_CLI_PATH, PUBKEY_FILE
 
 TG = Telegram(telegram=TELEGRAM_CLI_PATH,
               pubkey_file=PUBKEY_FILE)
 
+
+def message_loop():
+    try:
+        while True:
+            msg = (yield)
+            if msg.event != "message":
+                continue
+            if msg.own:
+                continue
+            if msg.text is None:
+                continue
+            else:
+                print("({}) {} {} -> {}".format(msg.receiver.title, msg.sender.first_name, msg.sender.last_name,
+                                                msg.text.strip()))
+    except GeneratorExit:
+        pass
+    except KeyboardInterrupt:
+        pass
+    else:
+        pass
 
 class SendButton(npyscreen.MiniButtonPress):
     def whenPressed(self):
@@ -89,11 +111,12 @@ class PyGramForm(npyscreen.ActionFormExpanded):
     def on_ok(self):
         ans = npyscreen.notify_yes_no('Are you sure, you want to quit?')
         if ans:
+            TG.receiver.stop()
             self.parentApp.switchForm(None)
 
     def on_cancel(self):
         """ Message will be send """
-        if self.dialog_list.entry_widget:
+        if self.dialog_list.entry_widget and self.dialog_list.entry_widget.value:
             selected_index = self.dialog_list.entry_widget.value
             dialog_name = self.dialog_list.values[selected_index]
             text = self.chat_box.entry_widget.value.strip()
@@ -108,7 +131,7 @@ class PyGramForm(npyscreen.ActionFormExpanded):
     def create(self):
         self.dialog_list = self.add(npyscreen.BoxTitle, name="Dialog List", scroll_exit=True,
                                     editable=True, max_width=self.form_width, max_height=self._max_physical()[0] - 10)
-        self.dialog_list.values = list(map(lambda x: x.print_name, self.parentApp.dialog_list))
+        self.load_dialogs()
 
         self.dialog_list.add_handlers({'^D': self.load_history})
 
@@ -118,6 +141,40 @@ class PyGramForm(npyscreen.ActionFormExpanded):
 
         self.chat_box = self.add(ChatBox, name='{}'.format(self.full_name), scroll_exit=True,
                                  editable=True, max_height=5, contained_widget_arguments={'name': ' '})
+
+        self.start_receiver()
+
+    def start_receiver(self):
+        self.receiver_thread = threading.Thread(target=self.trigger_receiver)
+        self.receiver_thread.daemon = True
+        self.receiver_thread.start()
+
+    @coroutine
+    def message_loop(self):
+        try:
+            while True:
+                msg = (yield)
+                if msg.event != "message" or msg.own:
+                    continue
+                else:
+                    self.chat_box.entry_widget.value = msg.text.strip()
+                    self.chat_box.update()
+                    self.find_next_editable()
+                    self.editw = 0
+                    self.load_dialogs()
+        except (GeneratorExit, KeyboardInterrupt):
+            pass
+        else:
+            pass
+
+    def trigger_receiver(self, *args, **keywords):
+        TG.receiver.start()
+        TG.receiver.message(self.message_loop())
+
+    def load_dialogs(self, *args, **keywords):
+        dialog_list = TG.sender.dialog_list(retry_connect=True)
+        self.parentApp.dialog_list = dialog_list
+        self.dialog_list.values = list(map(lambda x: x.print_name, self.parentApp.dialog_list))
 
     def load_history(self, *args, **keywords):
         selected_index = self.dialog_list.entry_widget.value
@@ -158,6 +215,8 @@ class PyGramForm(npyscreen.ActionFormExpanded):
             wid.how_exited = widget.EXITED_DOWN
             self.handle_exiting_widgets(wid.how_exited)
             self.editw += 1
+        self.load_dialogs()
+        self.dialog_list.update()
 
 
 class PyGramApp(npyscreen.NPSAppManaged):
