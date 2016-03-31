@@ -119,13 +119,19 @@ class PyGramForm(npyscreen.ActionForm):
 
         # Force movement to history box
         self.find_next_editable()
-        # Coused of force editable widget index also should be updated
-        self.editw = 0
         self.chat_history.entry_widget.h_show_end(None)
         self.find_next_editable()
         self.editw = 0
-        self.find_next_editable()
-        self.editw = 0
+        for wid in self._widgets__:
+            if wid == self.chat_box:
+                wid.how_exited = widget.EXITED_DOWN
+                self.editw = self._widgets__.index(wid)
+                self._widgets__[self.editw].edit()
+                self._widgets__[self.editw].display()
+                break
+            wid.how_exited = widget.EXITED_DOWN
+            self.handle_exiting_widgets(wid.how_exited)
+            self.editw += 1
 
 
 class PyGramApp(npyscreen.NPSAppManaged):
