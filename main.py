@@ -12,20 +12,31 @@ TG = Telegram(telegram=TELEGRAM_CLI_PATH,
               pubkey_file=PUBKEY_FILE)
 
 
+class ChatBox(npyscreen.BoxTitle):
+    _contained_widget = npyscreen.Textfield
+
+
 class PyGramForm(npyscreen.ActionForm):
     form_width = 30
+    full_name = '{} {}'.format(TG.sender.get_self().first_name, TG.sender.get_self().last_name)
 
     def on_ok(self):
         self.parentApp.switchForm(None)
 
     def create(self):
+        print(self._max_physical())
         self.dialog_list = self.add(npyscreen.BoxTitle, name="Dialog List", scroll_exit=True,
-                                    editable=True, max_width=self.form_width)
+                                    editable=True, max_width=self.form_width, max_height=self._max_physical()[0] - 10)
         self.dialog_list.values = list(map(lambda x: x.print_name, self.parentApp.dialog_list))
+
         self.dialog_list.add_handlers({'^D': self.load_history})
 
         self.chat_history = self.add(npyscreen.BoxTitle, name="", scroll_exit=True,
-                                     editable=False, relx=self.form_width + 2, rely=2)
+                                     editable=True, relx=self.form_width + 2, rely=2,
+                                     max_height=self._max_physical()[0] - 10)
+
+        self.chat_box = self.add(ChatBox, name='{}'.format(self.full_name), scroll_exit=True,
+                                 editable=True, max_height=5, contained_widget_arguments={'name': ' '})
 
     def load_history(self, *args, **keywords):
         selected_index = self.dialog_list.entry_widget.value
@@ -45,13 +56,13 @@ class PyGramForm(npyscreen.ActionForm):
                                                      datetime.fromtimestamp(getattr(x, 'date', '')),
                                                      (getattr(x, 'text', '') or
                                                       getattr(getattr(x, 'media', DictObject()), 'address', '')))),
-                           TG.sender.history(printed_name, 10, 0))))
+                           TG.sender.history(printed_name, 100, 0, retry_connect=True))))
             self.parentApp.fill_history()
 
         # Force movement to history box
         self.find_next_editable()
         # Coused of force editable widget index also should be updated
-        self.editw += 1
+        self.editw = 0
 
 
 class PyGramApp(npyscreen.NPSAppManaged):
@@ -59,7 +70,7 @@ class PyGramApp(npyscreen.NPSAppManaged):
     contacts_list = []
 
     def onStart(self):
-        self.dialog_list = TG.sender.dialog_list()
+        self.dialog_list = TG.sender.dialog_list(retry_connect=True)
         self.contacts_list = TG.sender.contacts_list()
         self.addForm('MAIN', PyGramForm, name='Welcome PyGram')
 
@@ -67,14 +78,7 @@ class PyGramApp(npyscreen.NPSAppManaged):
         npyscreen.notify_wait("Goodbye!")
 
     def fill_history(self):
-        # Switch forms.  NB. Do *not* call the .edit() method directly (which
-        # would lead to a memory leak and ultimately a recursion error).
-        # Instead, use the method .switchForm to change forms.
-
-        # By default the application keeps track of every form visited.
-        # There's no harm in this, but we don't need it so:
         self.resetHistory()
-
 
 if __name__ == "__main__":
     PyGramApp().run()
