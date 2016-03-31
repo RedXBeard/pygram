@@ -70,7 +70,7 @@ class PyGramApp(npyscreen.NPSAppManaged):
     contacts_list = []
 
     def onStart(self):
-        self.dialog_list = TG.sender.dialog_list(retry_connect=True)
+        self.dialog_list = reversed(TG.sender.dialog_list(retry_connect=True))
         self.contacts_list = TG.sender.contacts_list()
         self.addForm('MAIN', PyGramForm, name='Welcome PyGram')
 
