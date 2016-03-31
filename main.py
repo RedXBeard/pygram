@@ -121,6 +121,11 @@ class PyGramForm(npyscreen.ActionForm):
         self.find_next_editable()
         # Coused of force editable widget index also should be updated
         self.editw = 0
+        self.chat_history.entry_widget.h_show_end(None)
+        self.find_next_editable()
+        self.editw = 0
+        self.find_next_editable()
+        self.editw = 0
 
 
 class PyGramApp(npyscreen.NPSAppManaged):
