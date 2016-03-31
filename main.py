@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 from datetime import datetime
+import logging
 
 import npyscreen
 from DictObject import DictObject
@@ -81,4 +82,5 @@ class PyGramApp(npyscreen.NPSAppManaged):
         self.resetHistory()
 
 if __name__ == "__main__":
+    logging.basicConfig(filename="./log/pygram-{}.log".format(datetime.now()))
     PyGramApp().run()
