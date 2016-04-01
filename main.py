@@ -130,6 +130,7 @@ class PyGramForm(npyscreen.ActionFormExpanded):
 
     def __init__(self, *args, **kwargs):
         self.form_width = 30
+        self.receiver_thread = None
         super().__init__(*args, **kwargs)
         self.current_peer = None
 
@@ -167,7 +168,7 @@ class PyGramForm(npyscreen.ActionFormExpanded):
                                      max_height=self._max_physical()[0] - 10)
 
         self.chat_box = self.add(ChatBox, name='{}'.format(self.FULL_NAME), scroll_exit=True,
-                                 editable=True, max_height=5, contained_widget_arguments={'name': ' '})
+                                 editable=True, max_height=5)
 
         self.start_receiver()
 
@@ -237,11 +238,9 @@ class PyGramForm(npyscreen.ActionFormExpanded):
             self.editw -= 1
 
         if keywords.get('trigger_movement', True):
-            # Force movement to history box
-            self.editw = 0
+            # Force movement to chat box
             for wid in self._widgets__:
                 if wid == self.chat_box:
-                    wid.how_exited = widget.EXITED_DOWN
                     self.editw = self._widgets__.index(wid)
                     self._widgets__[self.editw].editing = True
                     self._widgets__[self.editw].edit()
