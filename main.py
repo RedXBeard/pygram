@@ -126,8 +126,12 @@ class PyGramForm(npyscreen.ActionFormExpanded):
     CANCEL_BUTTON_BR_OFFSET = (5, 12)
     OK_BUTTON_TEXT = "QUIT"
     CANCEL_BUTTON_TEXT = "SEND"
-    form_width = 30
-    full_name = '{} {}'.format(TG.sender.get_self().first_name, TG.sender.get_self().last_name)
+    FULL_NAME = '{} {}'.format(TG.sender.get_self().first_name, TG.sender.get_self().last_name)
+
+    def __init__(self, *args, **kwargs):
+        self.form_width = 30
+        super().__init__(*args, **kwargs)
+        self.current_peer = None
 
     def on_ok(self):
         ans = npyscreen.notify_yes_no('Are you sure, you want to quit?')
@@ -146,6 +150,8 @@ class PyGramForm(npyscreen.ActionFormExpanded):
                 if send_status:
                     self.chat_box.entry_widget.value = ""
                     self.load_history()
+                    self.dialog_list.entry_widget.value = self.dialog_list.values.index(self.current_peer.print_name)
+                    self.editw = self._widgets__.index(self.chat_box)
         else:
             npyscreen.notify_ok_cancel('Please select receiver first.')
 
@@ -160,7 +166,7 @@ class PyGramForm(npyscreen.ActionFormExpanded):
                                      editable=True, relx=self.form_width + 2, rely=2,
                                      max_height=self._max_physical()[0] - 10)
 
-        self.chat_box = self.add(ChatBox, name='{}'.format(self.full_name), scroll_exit=True,
+        self.chat_box = self.add(ChatBox, name='{}'.format(self.FULL_NAME), scroll_exit=True,
                                  editable=True, max_height=5, contained_widget_arguments={'name': ' '})
 
         self.start_receiver()
@@ -190,8 +196,6 @@ class PyGramForm(npyscreen.ActionFormExpanded):
                             self.load_history(trigger_movement=False)
         except (GeneratorExit, KeyboardInterrupt, NoResponse):
             pass
-        else:
-            pass
 
     def trigger_receiver(self, *args, **keywords):
         TG.receiver.start()
@@ -208,6 +212,7 @@ class PyGramForm(npyscreen.ActionFormExpanded):
         selected_dialog = list(filter(
             lambda x: x.print_name == printed_name, self.parentApp.dialog_list))
         if selected_dialog:
+            self.current_peer = selected_dialog[0]
             self.chat_history.entry_widget.lines_placed = False
             self.chat_history.name = (getattr(selected_dialog[0], 'title', None) or
                                       "{} {}".format(getattr(selected_dialog[0], 'first_name', ''),
