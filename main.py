@@ -15,6 +15,7 @@ from pytg.utils import coroutine
 
 from config import TELEGRAM_CLI_PATH, PUBKEY_FILE
 
+VERSION = "1.0.0"
 TG = Telegram(telegram=TELEGRAM_CLI_PATH,
               pubkey_file=PUBKEY_FILE)
 logger = logging.getLogger("main")
@@ -195,7 +196,7 @@ class PyGramForm(npyscreen.ActionFormExpanded):
                                 (current_dialog.peer_type == 'chat' and
                                          current_dialog.peer_id == msg.receiver.peer_id)):
                             self.load_history(trigger_movement=False)
-        except (GeneratorExit, KeyboardInterrupt, NoResponse):
+        except (GeneratorExit, KeyboardInterrupt, TypeError, NoResponse):
             pass
 
     def trigger_receiver(self, *args, **keywords):
