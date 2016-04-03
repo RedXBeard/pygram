@@ -1,3 +1,5 @@
-from main import PyGramApp
+from pygram.app import PyGramApp
 
-main = PyGramApp().run()
+
+def main():
+    PyGramApp().run()

@@ -1,7 +1,7 @@
 import os
 import platform
 # from distutils.core import setup
-from setuptools import find_packages, setup
+from setuptools import setup
 from pygram import __version__
 
 PLATFORM = platform.system()
@@ -70,9 +70,9 @@ elif result:
 os.chdir(home_folder)
 
 setup(
-    name='pygram',
+    name='pygramapp',
     version=__version__,
-    packages = ['pygram'],
+    packages={'': 'pygram'},
     #packages=find_packages(),
     #package_data={'pygram': ['*.py', '*.pub', 'pygram/*.py', 'pygram/*.pub']},
     include_package_data=True,
@@ -84,7 +84,7 @@ setup(
     long_description=LONG_DESCRIPTION,
     entry_points={
         'console_scripts': [
-            'pygram=pygram.command:main',
+            'pygram = pygram.command:main',
         ],
     },
     classifiers=[
@@ -96,5 +96,6 @@ setup(
         'Operating System :: Unix',
         'Programming Language :: Python :: 3 :: Only',
         'Topic :: Communications :: Chat'
-    ], install_requires=['npyscreen', 'DictObject', 'pytg']
+    ],
+    install_requires=['npyscreen', 'DictObject', 'pytg']
 )
