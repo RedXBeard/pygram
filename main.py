@@ -1,126 +1,22 @@
 # encoding: utf-8
 
 import logging
-import textwrap
 import threading
 from datetime import datetime
 
 import npyscreen
 from DictObject import DictObject
-from npyscreen import Textfield
 from npyscreen import wgwidget as widget
 from pytg import Telegram
 from pytg.exceptions import NoResponse
 from pytg.utils import coroutine
 
-from config import TELEGRAM_CLI_PATH, PUBKEY_FILE
+from pygram.boxtitle import DialogBox, HistoryBox, ChatBox
+from pygram.config import TELEGRAM_CLI_PATH, PUBKEY_FILE
 
-VERSION = "1.0.0"
 TG = Telegram(telegram=TELEGRAM_CLI_PATH,
               pubkey_file=PUBKEY_FILE)
 logger = logging.getLogger("main")
-
-
-class ChatBox(npyscreen.BoxTitle):
-    _contained_widget = npyscreen.Textfield
-
-
-class CustomPager(npyscreen.Pager):
-    def __init__(self, screen, autowrap=True, center=False, **keywords):
-        super().__init__(screen, **keywords)
-        self.autowrap = autowrap
-        self.center = center
-        self._values_cache_for_wrapping = []
-        self.widgets_inherit_color = True
-        self.color = 'DEFAULT'
-        self.lines_placed = False
-
-    def _wrap_message_lines(self, message_lines, line_length):
-        lines = []
-        if not self.lines_placed:
-            for line in message_lines:
-                if line.rstrip() == '':
-                    lines.append('')
-                else:
-                    if line.find('\n\t') != -1:
-                        user_info, message_text = line.rsplit("\n\t", 1)
-                        space = line_length - 1 - len(user_info)
-                        name, timestamp = user_info.split('(')
-                        message_header = "{}{}({}".format(name.strip(), '.' * space,
-                                                          timestamp.strip())
-                        lines.append("->{}".format(message_header))
-                    else:
-                        message_text = line
-                    this_line_set = list(map(
-                        lambda x: "\t\t\t\t{}".format(x),
-                        textwrap.wrap(message_text.rstrip(), line_length - 5)))
-                    if this_line_set:
-                        lines.extend(this_line_set + [''])
-                    else:
-                        lines.append('')
-        else:
-            lines = message_lines
-        return lines
-
-    def _set_line_values(self, line, value_indexer):
-        try:
-            _vl = self.values[value_indexer]
-        except IndexError:
-            self._set_line_blank(line)
-            return False
-        except TypeError:
-            self._set_line_blank(line)
-            return False
-        line.value = self.display_value(_vl)
-        line.color = _vl.startswith('->') and 'CONTROL' or 'DEFAULT'
-        line.hidden = False
-
-    def h_scroll_line_down(self, input):
-        self.start_display_at += 1
-        if self.scroll_exit and self.height > len(self.values) - self.start_display_at:
-            self.editing = False
-            self.how_exited = widget.EXITED_DOWN
-
-
-class HistoryBox(npyscreen.BoxTitle):
-    _contained_widget = CustomPager
-
-
-class CustomRoundCheckBox(npyscreen.RoundCheckBox):
-    def _create_label_area(self, screen):
-        l_a_width = self.width - 3
-
-        if l_a_width < 1:
-            raise ValueError("Width of checkbox + label must be at least 6")
-
-        self.label_area = Textfield(screen, rely=self.rely, relx=self.relx + 3,
-                                    width=self.width - 3, value=self.name)
-
-    def update(self, clear=True):
-        super().update(clear=clear)
-        if self.hide: return True
-        if self.value:
-            cb_display = self.__class__.False_box
-        else:
-            cb_display = self.__class__.False_box
-        if self.do_colors():
-            self.parent.curses_pad.addstr(self.rely, self.relx, cb_display,
-                                          self.parent.theme_manager.findPair(self, 'CONTROL'))
-        else:
-            self.parent.curses_pad.addstr(self.rely, self.relx, cb_display)
-
-        self._update_label_area()
-
-    def calculate_area_needed(self):
-        return 0, 0
-
-
-class CustomSelectOne(npyscreen.SelectOne):
-    _contained_widgets = CustomRoundCheckBox
-
-
-class DialogBox(npyscreen.BoxTitle):
-    _contained_widget = CustomSelectOne
 
 
 class PyGramForm(npyscreen.ActionFormExpanded):
@@ -135,7 +31,9 @@ class PyGramForm(npyscreen.ActionFormExpanded):
         super().__init__(*args, **kwargs)
         self.current_peer = None
 
-    def on_ok(self):
+    def on_ok(self, direct=False):
+        if direct:
+            self.parentApp.switchForm(None)
         ans = npyscreen.notify_yes_no('Are you sure, you want to quit?')
         if ans:
             TG.receiver.stop()
@@ -200,8 +98,12 @@ class PyGramForm(npyscreen.ActionFormExpanded):
             pass
 
     def trigger_receiver(self, *args, **keywords):
-        TG.receiver.start()
-        TG.receiver.message(self.message_loop())
+        try:
+            TG.receiver.start()
+            TG.receiver.message(self.message_loop())
+        except TypeError:
+            npyscreen.notify("Sorry, An error occurred please restart the app :(")
+            self.on_ok(direct=True)
 
     def load_dialogs(self, *args, **keywords):
         dialog_list = TG.sender.dialog_list(retry_connect=True)
@@ -268,5 +170,7 @@ class PyGramApp(npyscreen.NPSAppManaged):
 
 
 if __name__ == "__main__":
+    # from run import main
     logging.basicConfig(filename="./log/pygram-{}.log".format(datetime.now().date()))
+    # sys.exit(main())
     PyGramApp().run()
