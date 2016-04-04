@@ -70,11 +70,15 @@ elif result:
 os.chdir(home_folder)
 
 setup(
-    name='pygramapp',
+    name='pygram',
     version=__version__,
-    packages={'': 'pygram'},
-    #packages=find_packages(),
-    #package_data={'pygram': ['*.py', '*.pub', 'pygram/*.py', 'pygram/*.pub']},
+    packages=['pygram'],
+    package_dir={'': 'pygram'},
+    # packages=find_packages(),
+    package_data={
+        'pygram': [
+            '*.py', '*.pub', 'pygram/*.py', 'pygram/*.pub'
+        ]},
     include_package_data=True,
     url='https://github.com/RedXBeard/pygram',
     license='MIT',
@@ -97,5 +101,9 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
         'Topic :: Communications :: Chat'
     ],
-    install_requires=['npyscreen', 'DictObject', 'pytg']
+    install_requires=[
+        'npyscreen',
+        'DictObject',
+        'pytg'
+    ]
 )
