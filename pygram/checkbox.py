@@ -5,12 +5,16 @@ from npyscreen import Textfield
 
 
 class CustomRoundCheckBox(RoundCheckBox):
+    def whenToggled(self, current_dialog):
+        root = self.find_parent_app()
+        form = root.getForm('MAIN')
+        form.load_history(current_dialog=current_dialog)
+
     def _create_label_area(self, screen):
         l_a_width = self.width - 3
 
         if l_a_width < 1:
             raise ValueError("Width of checkbox + label must be at least 6")
-
         self.label_area = Textfield(screen, rely=self.rely, relx=self.relx + 3,
                                     width=self.width - 3, value=self.name)
 

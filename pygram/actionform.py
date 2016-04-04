@@ -7,6 +7,7 @@ from npyscreen import ActionFormExpanded, wgwidget as widget
 from pytg.exceptions import NoResponse
 from pytg.utils import coroutine
 
+from pygram import printed
 from pygram.boxtitle import DialogBox, HistoryBox, ChatBox
 
 
@@ -33,16 +34,13 @@ class PyGramForm(ActionFormExpanded):
 
     def on_cancel(self):
         """ Message will be send """
-        if self.dialog_list.entry_widget and self.dialog_list.entry_widget.value:
-            selected_index = self.dialog_list.entry_widget.value[0]
-            dialog_name = self.dialog_list.values[selected_index]
+        if self.current_peer:
             text = self.chat_box.entry_widget.value.strip()
             if text:
-                send_status = self.TG.sender.send_msg(dialog_name, text)
+                send_status = self.TG.sender.send_msg(self.current_peer.print_name, text)
                 if send_status:
                     self.chat_box.entry_widget.value = ""
-                    self.load_history()
-                    self.dialog_list.entry_widget.value = self.dialog_list.values.index(self.current_peer.print_name)
+                    self.load_history(current_dialog=self.current_peer)
                     self.editw = self._widgets__.index(self.chat_box)
         else:
             npyscreen.notify_ok_cancel('Please select receiver first.')
@@ -52,7 +50,7 @@ class PyGramForm(ActionFormExpanded):
                                     editable=True, max_width=self.form_width, max_height=self._max_physical()[0] - 10)
         self.load_dialogs()
 
-        self.dialog_list.add_handlers({'^D': self.load_history})
+        # self.dialog_list.add_handlers({'^D': self.load_history})
 
         self.chat_history = self.add(HistoryBox, name="", scroll_exit=True,
                                      editable=True, relx=self.form_width + 2, rely=2,
@@ -99,26 +97,32 @@ class PyGramForm(ActionFormExpanded):
 
     def load_dialogs(self, *args, **keywords):
         dialog_list = self.TG.sender.dialog_list(retry_connect=True)
+
+        # Formating display for dialogs
+        peer_index = None
+        for dial in dialog_list:
+            dial.printed = printed(dial)
+            if hasattr(self, 'current_peer') and dial == self.current_peer:
+                peer_index = dialog_list.index(dial)
+
         self.parentApp.dialog_list = dialog_list
-        self.dialog_list.values = list(map(lambda x: x.print_name, self.parentApp.dialog_list))
+        self.dialog_list.values = dialog_list
+        self.dialog_list.entry_widget.value = peer_index
 
     def load_history(self, *args, **keywords):
-        selected_index = self.dialog_list.entry_widget.value[0]
-        printed_name = self.dialog_list.values[selected_index]
-        selected_dialog = list(filter(
-            lambda x: x.print_name == printed_name, self.parentApp.dialog_list))
-        if selected_dialog:
-            self.current_peer = selected_dialog[0]
+        current_dialog = keywords.get('current_dialog', None)
+        if current_dialog:
+            self.current_peer = current_dialog
             self.chat_history.entry_widget.lines_placed = False
-            self.chat_history.name = (getattr(selected_dialog[0], 'title', None) or
-                                      "{} {}".format(getattr(selected_dialog[0], 'first_name', ''),
-                                                     getattr(selected_dialog[0], 'last_name', '')))
+            self.chat_history.name = (getattr(current_dialog, 'title', '') or
+                                      getattr(current_dialog, 'printed', '') or 'Unknown')
 
-            history = self.TG.sender.history(printed_name, 100, 0, retry_connect=True)
+            history = self.TG.sender.history(current_dialog.print_name, 100, 0, retry_connect=True)
+
             unread = list(filter(lambda x: x.unread, history))
             if unread:
                 unread_index = history.index(unread[0])
-                history = history[:unread_index] + ["--just received--"] + history[unread_index:]
+                history = history[:unread_index] + ["--New Messages--"] + history[unread_index:]
             self.chat_history.values = list(
                 filter(lambda x: x,
                        map(lambda x: (

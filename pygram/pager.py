@@ -44,7 +44,7 @@ class CustomPager(Pager):
                     this_line_set = list(map(
                         lambda x: (is_user_message and
                                    "{}{}".format(' ' * (line_length - 1 - len(x)), x) or
-                                   (x == "--just received--" and
+                                   (x == "--New Messages--" and
                                     "{}{}{}".format(' ' * int((line_length - 1 - len(x)) / 2),
                                                     x,
                                                     ' ' * int((line_length - 1 - len(x)) / 2)) or
@@ -73,7 +73,7 @@ class CustomPager(Pager):
             color = 'GOOD'
         elif _vl.startswith('->'):
             color = 'CONTROL'
-        elif _vl.find('--just received--') != -1:
+        elif _vl.find('--New Messages--') != -1:
             line.value = line.display_value(_vl.replace('-', ' '))
             color = 'STANDOUT'
         # line.color = _vl.startswith('->(') and 'GOOD' or (_vl.startswith('->') and 'CONTROL' or 'DEFAULT')
