@@ -1,6 +1,7 @@
 from npyscreen import NPSAppManaged
 from pytg import Telegram
 
+from pygram import __version__
 from pygram.actionform import PyGramForm
 from pygram.config import TELEGRAM_CLI_PATH, PUBKEY_FILE
 
@@ -15,7 +16,7 @@ class PyGramApp(NPSAppManaged):
     def onStart(self):
         self.dialog_list = TG.sender.dialog_list(retry_connect=True)
         self.contacts_list = TG.sender.contacts_list()
-        self.addForm('MAIN', PyGramForm, name='Welcome PyGram', TG=TG)
+        self.addForm('MAIN', PyGramForm, name='Welcome PyGram ({})'.format(__version__), TG=TG)
 
     def fill_history(self):
         self.resetHistory()

@@ -19,21 +19,35 @@ class CustomPager(Pager):
     def _wrap_message_lines(self, message_lines, line_length):
         lines = []
         if not self.lines_placed:
+            is_user_message = False
             for line in message_lines:
                 if line.rstrip() == '':
                     lines.append('')
                 else:
+                    root = self.find_parent_app()
+                    user = root.getForm('MAIN').full_name
                     if line.find('\n\t') != -1:
+                        is_user_message = False
                         user_info, message_text = line.rsplit("\n\t", 1)
                         space = line_length - 1 - len(user_info)
                         name, timestamp = user_info.split('(')
-                        message_header = "{}{}({}".format(name.strip(), '.' * space,
-                                                          timestamp.strip())
+                        if name.strip() == user.strip():
+                            message_header = "({}{}{}".format(timestamp.strip(),
+                                                              '.' * space, name.strip())
+                            is_user_message = True
+                        else:
+                            message_header = "{}{}({}".format(name.strip(), '.' * space,
+                                                              timestamp.strip())
                         lines.append("->{}".format(message_header))
                     else:
-                        message_text = line
+                        if is_user_message:
+                            message_text = "{}{}".format(' ' * (line_length - 1 - len(line)), line)
+                        else:
+                            message_text = line
                     this_line_set = list(map(
-                        lambda x: "\t\t\t\t{}".format(x),
+                        lambda x: (is_user_message and
+                                   "{}{}".format(' ' * (line_length - 1 - len(x)), x) or
+                                   "{}{}".format(' ' * 4, x)),
                         textwrap.wrap(message_text.rstrip(), line_length - 5)))
                     if this_line_set:
                         lines.extend(this_line_set + [''])
@@ -53,7 +67,7 @@ class CustomPager(Pager):
             self._set_line_blank(line)
             return False
         line.value = self.display_value(_vl)
-        line.color = _vl.startswith('->') and 'CONTROL' or 'DEFAULT'
+        line.color = _vl.startswith('->(') and 'GOOD' or (_vl.startswith('->') and 'CONTROL' or 'DEFAULT')
         line.hidden = False
 
     def h_scroll_line_down(self, input):
