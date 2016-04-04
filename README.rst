@@ -34,7 +34,7 @@ Usage
 
 .. code-block:: bash
 
-    python3.5 pygram/main.py
+    python3.5 main.py
 
 
 Conributors
