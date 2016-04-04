@@ -1,13 +1,15 @@
 import os
 import platform
 # from distutils.core import setup
-from setuptools import setup
+from setuptools import setup, find_packages
 from pygram import __version__
 
 PLATFORM = platform.system()
 
 CHANGE_MAKEFILE = (
     """python -c "ff=open('Makefile').read();f=open('Makefile', 'w');f.write(ff.replace(' -Werror',''));f.close()" """)
+
+
 
 with open(os.path.join(os.path.dirname(__file__), 'README.rst')) as readme:
     LONG_DESCRIPTION = readme.read()
@@ -73,11 +75,10 @@ setup(
     name='pygram',
     version=__version__,
     packages=['pygram'],
-    package_dir={'': 'pygram'},
-    # packages=find_packages(),
+    # package_dir={'': '.'},
     package_data={
-        'pygram': [
-            '*.py', '*.pub', 'pygram/*.py', 'pygram/*.pub'
+        '.': [
+            '*.pub',
         ]},
     include_package_data=True,
     url='https://github.com/RedXBeard/pygram',
