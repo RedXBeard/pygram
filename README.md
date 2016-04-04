@@ -21,7 +21,7 @@ cd pygram;pip3.5 install -r requirements
 ```
 ## Usage
 ```bash
-python3.5 pygram/main.py
+python3.5 main.py
 ```
 
 ## Conributors
