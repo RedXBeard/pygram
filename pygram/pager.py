@@ -40,14 +40,15 @@ class CustomPager(Pager):
                                                               timestamp.strip())
                         lines.append("->{}".format(message_header))
                     else:
-                        if is_user_message:
-                            message_text = "{}{}".format(' ' * (line_length - 1 - len(line)), line)
-                        else:
-                            message_text = line
+                        message_text = line
                     this_line_set = list(map(
                         lambda x: (is_user_message and
                                    "{}{}".format(' ' * (line_length - 1 - len(x)), x) or
-                                   "{}{}".format(' ' * 4, x)),
+                                   (x == "--just received--" and
+                                    "{}{}{}".format(' ' * int((line_length - 1 - len(x)) / 2),
+                                                    x,
+                                                    ' ' * int((line_length - 1 - len(x)) / 2)) or
+                                    "{}{}".format(' ' * 4, x))),
                         textwrap.wrap(message_text.rstrip(), line_length - 5)))
                     if this_line_set:
                         lines.extend(this_line_set + [''])
@@ -67,7 +68,16 @@ class CustomPager(Pager):
             self._set_line_blank(line)
             return False
         line.value = self.display_value(_vl)
-        line.color = _vl.startswith('->(') and 'GOOD' or (_vl.startswith('->') and 'CONTROL' or 'DEFAULT')
+        color = 'DEFAULT'
+        if _vl.startswith('->('):
+            color = 'GOOD'
+        elif _vl.startswith('->'):
+            color = 'CONTROL'
+        elif _vl.find('--just received--') != -1:
+            line.value = line.display_value(_vl.replace('-', ' '))
+            color = 'STANDOUT'
+        # line.color = _vl.startswith('->(') and 'GOOD' or (_vl.startswith('->') and 'CONTROL' or 'DEFAULT')
+        line.color = color
         line.hidden = False
 
     def h_scroll_line_down(self, input):

@@ -114,15 +114,21 @@ class PyGramForm(ActionFormExpanded):
                                       "{} {}".format(getattr(selected_dialog[0], 'first_name', ''),
                                                      getattr(selected_dialog[0], 'last_name', '')))
 
+            history = self.TG.sender.history(printed_name, 100, 0, retry_connect=True)
+            unread = list(filter(lambda x: x.unread, history))
+            if unread:
+                unread_index = history.index(unread[0])
+                history = history[:unread_index] + ["--just received--"] + history[unread_index:]
             self.chat_history.values = list(
                 filter(lambda x: x,
                        map(lambda x: (
-                           '{} {} ({})\n\t{}'.format(getattr(getattr(x, 'from'), 'first_name', ''),
-                                                     getattr(getattr(x, 'from'), 'last_name', ''),
-                                                     datetime.fromtimestamp(getattr(x, 'date', '')),
-                                                     (getattr(x, 'text', '') or
-                                                      getattr(getattr(x, 'media', DictObject()), 'address', '')))),
-                           self.TG.sender.history(printed_name, 100, 0, retry_connect=True))))
+                           isinstance(x, str) and x or '{} {} ({})\n\t{}'.format(
+                               getattr(getattr(x, 'from'), 'first_name', ''),
+                               getattr(getattr(x, 'from'), 'last_name', ''),
+                               datetime.fromtimestamp(getattr(x, 'date', '')),
+                               (getattr(x, 'text', '') or
+                                getattr(getattr(x, 'media', DictObject()), 'address', '')))),
+                           history)))
             self.parentApp.fill_history()
             self.find_next_editable()
             self.editw -= 1
