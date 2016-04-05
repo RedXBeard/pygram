@@ -4,7 +4,7 @@ from datetime import datetime
 import npyscreen
 from DictObject import DictObject
 from npyscreen import ActionFormExpanded, wgwidget as widget
-from pytg.exceptions import NoResponse
+from pytg.exceptions import NoResponse, IllegalResponseException
 from pytg.utils import coroutine
 
 from pygram import printed
@@ -79,7 +79,7 @@ class PyGramForm(ActionFormExpanded):
                         if ((self.current_peer.peer_type == 'user' and
                                      self.current_peer.peer_id == msg.sender.peer_id) or
                                 (self.current_peer.peer_type == 'chat' and
-                                         current_dialog.peer_id == msg.receiver.peer_id)):
+                                         self.current_peer.peer_id == msg.receiver.peer_id)):
                             self.load_history(trigger_movement=False, current_dialog=self.current_peer)
         except (GeneratorExit, KeyboardInterrupt, TypeError, NoResponse):
             pass
@@ -92,8 +92,8 @@ class PyGramForm(ActionFormExpanded):
             npyscreen.notify("Sorry, An error occurred please restart the app :(")
             self.on_ok(direct=True)
 
-    def load_dialogs(self, *args, **keywords):
-        dialog_list = self.TG.sender.dialog_list(retry_connect=True)
+    def load_dialogs(self, check_each=True, **keywords):
+        dialog_list = list(reversed(self.TG.sender.dialog_list(retry_connect=True)))
 
         # Formating display for dialogs
         peer_index = None
@@ -101,10 +101,18 @@ class PyGramForm(ActionFormExpanded):
             dial.printed = printed(dial)
             if hasattr(self, 'current_peer') and dial == self.current_peer:
                 peer_index = dialog_list.index(dial)
-
+            try:
+                history = self.TG.sender.history(dial.print_name, 2, 0, retry_connect=True)
+                unread = len(list(filter(lambda x: x.unread, history)))
+                dial.unread = unread
+            except (IllegalResponseException, NoResponse):
+                dial.unread = 0
         self.parentApp.dialog_list = dialog_list
         self.dialog_list.values = dialog_list
         self.dialog_list.entry_widget.value = peer_index
+        self.dialog_list.update()
+        self.find_next_editable()
+        self.editw -= 1
 
     def load_history(self, *args, **keywords):
         current_dialog = keywords.get('current_dialog', None)
@@ -123,9 +131,8 @@ class PyGramForm(ActionFormExpanded):
             self.chat_history.values = list(
                 filter(lambda x: x,
                        map(lambda x: (
-                           isinstance(x, str) and x or '{} {} ({})\n\t{}'.format(
-                               getattr(getattr(x, 'from'), 'first_name', ''),
-                               getattr(getattr(x, 'from'), 'last_name', ''),
+                           isinstance(x, str) and x or '{} ({})\n\t{}'.format(
+                               printed(getattr(x, 'from')),
                                datetime.fromtimestamp(getattr(x, 'date', '')),
                                (getattr(x, 'text', '') or
                                 getattr(getattr(x, 'media', DictObject()), 'address', '')))),
