@@ -1,3 +1,4 @@
+import asyncio
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -13,11 +14,12 @@ def printed(obj):
     return ''
 
 
+@asyncio.coroutine
 def check_version():
     try:
         resp = urlopen("https://github.com/RedXBeard/pygram/releases/latest")
         current_version = int("".join(resp.url.split("/")[-1].split(".")))
-        if current_version > VERSION:
+        if current_version > int("".join(list(map(str, VERSION)))):
             return False
     except (URLError, ValueError):
         pass

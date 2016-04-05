@@ -1,4 +1,4 @@
-import threading
+import asyncio
 from datetime import datetime
 
 import npyscreen
@@ -9,6 +9,7 @@ from pytg.utils import coroutine
 
 from pygram import printed, check_version
 from pygram.boxtitle import DialogBox, HistoryBox, ChatBox
+from pygram.pg_threading import PGThread
 
 
 class PyGramForm(ActionFormExpanded):
@@ -46,10 +47,20 @@ class PyGramForm(ActionFormExpanded):
             self.TG.receiver.stop()
             self.parentApp.switchForm(None)
 
-    def on_screen(self):
-        if not self.version_checked and not check_version():
-            npyscreen.notify_ok_cancel("New version released please check.")
+    def check_version(self, **keywords):
+        if not self.version_checked:
+            loop = keywords.get('loop')
+            result = loop.run_until_complete(check_version())
+            if not result:
+                npyscreen.notify("New version released please check.")
         self.version_checked = True
+
+    def on_screen(self):
+        if not hasattr(self, 'checker_thread'):
+            loop = asyncio.get_event_loop()
+            self.checker_thread = PGThread(target=self.check_version, args=(), kwargs={'loop': loop})
+            self.checker_thread.daemon = True
+            self.checker_thread.start()
 
     def on_cancel(self):
         """ Message will be send """
@@ -78,9 +89,8 @@ class PyGramForm(ActionFormExpanded):
 
         self.start_receiver()
 
-
     def start_receiver(self):
-        self.receiver_thread = threading.Thread(target=self.trigger_receiver)
+        self.receiver_thread = PGThread(target=self.trigger_receiver)
         self.receiver_thread.daemon = True
         self.receiver_thread.start()
 
