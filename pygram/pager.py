@@ -9,6 +9,7 @@ from npyscreen import wgwidget
 class CustomPager(Pager):
     def __init__(self, screen, autowrap=True, center=False, **keywords):
         super().__init__(screen, **keywords)
+        self.how_exited = None
         self.autowrap = autowrap
         self.center = center
         self._values_cache_for_wrapping = []
@@ -76,11 +77,10 @@ class CustomPager(Pager):
         elif _vl.find('--New Messages--') != -1:
             line.value = line.display_value(_vl.replace('-', ' '))
             color = 'STANDOUT'
-        # line.color = _vl.startswith('->(') and 'GOOD' or (_vl.startswith('->') and 'CONTROL' or 'DEFAULT')
         line.color = color
         line.hidden = False
 
-    def h_scroll_line_down(self, input):
+    def h_scroll_line_down(self, ch):
         self.start_display_at += 1
         if self.scroll_exit and self.height > len(self.values) - self.start_display_at:
             self.editing = False

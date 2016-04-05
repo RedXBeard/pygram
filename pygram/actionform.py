@@ -3,11 +3,11 @@ from datetime import datetime
 
 import npyscreen
 from DictObject import DictObject
-from npyscreen import ActionFormExpanded, wgwidget as widget
+from npyscreen import ActionFormExpanded, ActionForm, wgwidget as widget
 from pytg.exceptions import NoResponse, IllegalResponseException
 from pytg.utils import coroutine
 
-from pygram import printed
+from pygram import printed, check_version
 from pygram.boxtitle import DialogBox, HistoryBox, ChatBox
 
 
@@ -20,9 +20,23 @@ class PyGramForm(ActionFormExpanded):
         self.TG = kwargs.pop('TG', None)
         self.form_width = 30
         self.receiver_thread = None
-        self.full_name = '{} {}'.format(self.TG.sender.get_self().first_name, self.TG.sender.get_self().last_name)
+        self.full_name = printed(self.TG.sender.get_self())
+        self.dialog_list = None
+        self.chat_history = None
+        self.chat_box = None
+        self.editw = 0
         super().__init__(*args, **kwargs)
         self.current_peer = None
+        self.version_checked = False
+
+    def set_up_exit_condition_handlers(self):
+        super(ActionForm, self).set_up_exit_condition_handlers()
+        self.how_exited_handers.update({
+            widget.EXITED_ESCAPE: self.find_quit_button
+        })
+
+    def find_quit_button(self):
+        self.editw = len(self._widgets__) - 1
 
     def on_ok(self, direct=False):
         if direct:
@@ -31,6 +45,11 @@ class PyGramForm(ActionFormExpanded):
         if ans:
             self.TG.receiver.stop()
             self.parentApp.switchForm(None)
+
+    def on_screen(self):
+        if not self.version_checked and not check_version():
+            npyscreen.notify_ok_cancel("New version released please check.")
+        self.version_checked = True
 
     def on_cancel(self):
         """ Message will be send """
@@ -50,8 +69,6 @@ class PyGramForm(ActionFormExpanded):
                                     editable=True, max_width=self.form_width, max_height=self._max_physical()[0] - 10)
         self.load_dialogs()
 
-        # self.dialog_list.add_handlers({'^D': self.load_history})
-
         self.chat_history = self.add(HistoryBox, name="", scroll_exit=True,
                                      editable=True, relx=self.form_width + 2, rely=2,
                                      max_height=self._max_physical()[0] - 10)
@@ -60,6 +77,7 @@ class PyGramForm(ActionFormExpanded):
                                  editable=True, max_height=5)
 
         self.start_receiver()
+
 
     def start_receiver(self):
         self.receiver_thread = threading.Thread(target=self.trigger_receiver)
@@ -84,7 +102,7 @@ class PyGramForm(ActionFormExpanded):
         except (GeneratorExit, KeyboardInterrupt, TypeError, NoResponse):
             pass
 
-    def trigger_receiver(self, *args, **keywords):
+    def trigger_receiver(self):
         try:
             self.TG.receiver.start()
             self.TG.receiver.message(self.message_loop())
@@ -92,7 +110,7 @@ class PyGramForm(ActionFormExpanded):
             npyscreen.notify("Sorry, An error occurred please restart the app :(")
             self.on_ok(direct=True)
 
-    def load_dialogs(self, check_each=True, **keywords):
+    def load_dialogs(self):
         dialog_list = list(reversed(self.TG.sender.dialog_list(retry_connect=True)))
 
         # Formating display for dialogs
@@ -114,7 +132,7 @@ class PyGramForm(ActionFormExpanded):
         self.find_next_editable()
         self.editw -= 1
 
-    def load_history(self, *args, **keywords):
+    def load_history(self, **keywords):
         current_dialog = keywords.get('current_dialog', None)
         if current_dialog:
             self.current_peer = current_dialog

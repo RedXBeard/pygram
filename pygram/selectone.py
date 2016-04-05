@@ -12,7 +12,7 @@ class CustomSelectOne(SelectOne):
     def h_select(self, ch):
         self.value = [self.cursor_line, ]
         line = self._my_widgets[self.value[0]]
-        line.whenToggled(self.values[self.value[0]])
+        line.when_toggle(self.values[self.value[0]])
 
     def _print_line(self, line, value_indexer):
         try:

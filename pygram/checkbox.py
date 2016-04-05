@@ -5,7 +5,11 @@ from npyscreen import Textfield
 
 
 class CustomRoundCheckBox(RoundCheckBox):
-    def whenToggled(self, current_dialog):
+    def __init__(self, screen, value=False, **keywords):
+        super().__init__(screen, value=value, **keywords)
+        self.unread = None
+
+    def when_toggle(self, current_dialog):
         root = self.find_parent_app()
         form = root.getForm('MAIN')
         form.load_history(current_dialog=current_dialog)
@@ -20,12 +24,13 @@ class CustomRoundCheckBox(RoundCheckBox):
 
     def update(self, clear=True):
         super().update(clear=clear)
-        if self.hide: return True
+        if self.hide:
+            return True
         cb_display = "({})".format(str(self.unread).zfill(2))
         if self.do_colors():
             self.parent.curses_pad.addstr(self.rely, self.relx, cb_display,
                                           self.parent.theme_manager.findPair(
-                                              self, self.unread and 'DANGER' or 'CONTROL'))
+                                              self, 'DANGER' if self.unread else 'CONTROL'))
         else:
             self.parent.curses_pad.addstr(self.rely, self.relx, cb_display)
 
