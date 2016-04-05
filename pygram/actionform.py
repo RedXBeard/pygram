@@ -75,15 +75,12 @@ class PyGramForm(ActionFormExpanded):
                     continue
                 else:
                     self.load_dialogs()
-                    if self.dialog_list.entry_widget and self.dialog_list.entry_widget.value:
-                        selected_index = self.dialog_list.entry_widget.value[0]
-                        printed_name = self.dialog_list.values[selected_index]
-                        current_dialog = list(filter(lambda x: x.print_name == printed_name,
-                                                     self.parentApp.dialog_list))[0]
-                        if ((current_dialog.peer_type == 'user' and current_dialog.peer_id == msg.sender.peer_id) or
-                                (current_dialog.peer_type == 'chat' and
+                    if self.current_peer:
+                        if ((self.current_peer.peer_type == 'user' and
+                                     self.current_peer.peer_id == msg.sender.peer_id) or
+                                (self.current_peer.peer_type == 'chat' and
                                          current_dialog.peer_id == msg.receiver.peer_id)):
-                            self.load_history(trigger_movement=False)
+                            self.load_history(trigger_movement=False, current_dialog=self.current_peer)
         except (GeneratorExit, KeyboardInterrupt, TypeError, NoResponse):
             pass
 
