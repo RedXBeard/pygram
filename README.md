@@ -50,3 +50,4 @@ pygram
 - Dünya Değirmenci ([ddegirmenci](https://github.com/ddegirmenci))
 - Emre Yılmaz ([emre](https://github.com/emre))
 - Gürel Kaynak ([gurelkaynak](https://github.com/gurelkaynak))
+- Hazar İlhan ([batilc1](https://github.com/batilc1))
