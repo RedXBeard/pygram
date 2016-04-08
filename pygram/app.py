@@ -1,3 +1,4 @@
+import npyscreen
 from npyscreen import NPSAppManaged
 from pytg import Telegram
 
@@ -14,6 +15,7 @@ class PyGramApp(NPSAppManaged):
     contacts_list = []
 
     def onStart(self):
+        npyscreen.setTheme(npyscreen.Themes.ElegantTheme)
         self.dialog_list = TG.sender.dialog_list(retry_connect=True)
         self.contacts_list = TG.sender.contacts_list()
         self.addForm('MAIN', PyGramForm, name='Welcome PyGram ({})'.format(__version__), TG=TG)

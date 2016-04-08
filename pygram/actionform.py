@@ -1,21 +1,27 @@
 import asyncio
+import curses
+import weakref
 from datetime import datetime
 
 import npyscreen
 from DictObject import DictObject
-from npyscreen import ActionFormExpanded, ActionForm, wgwidget as widget
+from npyscreen import ActionFormV2WithMenus, wgwidget as widget
 from pytg.exceptions import NoResponse, IllegalResponseException
 from pytg.utils import coroutine
 
 from pygram import printed, check_version
 from pygram.boxtitle import DialogBox, HistoryBox, ChatBox
+from pygram.menu import CustomMenu
 from pygram.pg_threading import PGThread
 
 
-class PyGramForm(ActionFormExpanded):
+class PyGramForm(ActionFormV2WithMenus):
+    BLANK_LINES_BASE = 1
+    OK_BUTTON_BR_OFFSET = (1, 6)
     CANCEL_BUTTON_BR_OFFSET = (5, 12)
     OK_BUTTON_TEXT = "QUIT"
     CANCEL_BUTTON_TEXT = "SEND"
+    MENUS = []
 
     def __init__(self, *args, **kwargs):
         self.TG = kwargs.pop('TG', None)
@@ -25,13 +31,30 @@ class PyGramForm(ActionFormExpanded):
         self.dialog_list = None
         self.chat_history = None
         self.chat_box = None
+        self.contacts_list = []
         self.editw = 0
         super().__init__(*args, **kwargs)
         self.current_peer = None
         self.version_checked = False
 
+    def display_menu_advert_at(self):
+        return 2, self.lines - 1
+
+    def draw_form(self):
+        super().draw_form()
+        menu_advert = " " + self.__class__.MENU_KEY + ": Menu "
+        x, y = self.display_menu_advert_at()
+        if isinstance(menu_advert, bytes):
+            menu_advert = menu_advert.decode('utf-8', 'replace')
+        self.add_line(
+            y, x,
+            menu_advert,
+            self.make_attributes_list(menu_advert, curses.A_NORMAL),
+            self.columns - x
+        )
+
     def set_up_exit_condition_handlers(self):
-        super(ActionForm, self).set_up_exit_condition_handlers()
+        super().set_up_exit_condition_handlers()
         self.how_exited_handers.update({
             widget.EXITED_ESCAPE: self.find_quit_button
         })
@@ -75,9 +98,17 @@ class PyGramForm(ActionFormExpanded):
         else:
             npyscreen.notify_ok_cancel('Please select receiver first.')
 
+    def add_menu(self, name=None, *args, **keywords):
+        if not hasattr(self, '_NMenuList'):
+            self._NMenuList = []
+        _mnu = CustomMenu(name=name, *args, **keywords)
+        self._NMenuList.append(_mnu)
+        return weakref.proxy(_mnu)
+
     def create(self):
         self.dialog_list = self.add(DialogBox, name="Dialog List", scroll_exit=True,
-                                    editable=True, max_width=self.form_width, max_height=self._max_physical()[0] - 10)
+                                    editable=True, max_width=self.form_width,
+                                    max_height=self._max_physical()[0] - 10)
         self.load_dialogs()
 
         self.chat_history = self.add(HistoryBox, name="", scroll_exit=True,
@@ -87,7 +118,23 @@ class PyGramForm(ActionFormExpanded):
         self.chat_box = self.add(ChatBox, name='{}'.format(self.full_name), scroll_exit=True,
                                  editable=True, max_height=5)
 
+        self.contacts_list_menu = self.add_menu(name="Contact List")
+
+        self.contacts_list_menu.addItemsFromList(
+            list(map(lambda x: (x, self.start_dialog, None, None, None, {'contact': x}), self.load_contacts_list()))
+        )
+
         self.start_receiver()
+
+    def load_contacts_list(self):
+        self.contacts_list = self.TG.sender.contacts_list()
+        return self.contacts_list
+
+    def start_dialog(self, contact):
+        # start a chat with selected one, what about dialog_list?
+        contact.printed = printed(contact)
+        self.current_peer = contact
+        self.load_history(current_dialog=self.current_peer)
 
     def start_receiver(self):
         self.receiver_thread = PGThread(target=self.trigger_receiver)
@@ -109,7 +156,8 @@ class PyGramForm(ActionFormExpanded):
                                 (self.current_peer.peer_type == 'chat' and
                                          self.current_peer.peer_id == msg.receiver.peer_id)):
                             self.load_history(trigger_movement=False, current_dialog=self.current_peer)
-        except (GeneratorExit, KeyboardInterrupt, TypeError, NoResponse):
+        except (GeneratorExit, KeyboardInterrupt, TypeError, NoResponse) as err:
+            print(err)
             pass
 
     def trigger_receiver(self):
@@ -150,7 +198,12 @@ class PyGramForm(ActionFormExpanded):
             self.chat_history.name = (getattr(current_dialog, 'title', '') or
                                       getattr(current_dialog, 'printed', '') or 'Unknown')
 
-            history = self.TG.sender.history(current_dialog.print_name, 100, 0, retry_connect=True)
+            while True:
+                try:
+                    history = self.TG.sender.history(current_dialog.print_name, 100, 0, retry_connect=True)
+                    break
+                except NoResponse:
+                    continue
 
             unread = list(filter(lambda x: x.unread, history))
             if unread:
