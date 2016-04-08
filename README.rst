@@ -76,3 +76,4 @@ Conributors
 - Dünya Değirmenci (`ddegirmenci <https://github.com/ddegirmenci>`_)
 - Emre Yılmaz (`emre <https://github.com/emre>`_)
 - Gürel Kaynak (`gurelkaynak <https://github.com/gurelkaynak>`_)
+- Hazar İlhan (`batilc1 <https://github.com/batilc1>`_)
