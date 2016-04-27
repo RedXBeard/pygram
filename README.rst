@@ -68,7 +68,7 @@ second, much more easy;
     pygram
 
 
-Conributors
+Collaborators
 -----------
 
 - Barbaros Yıldırım (`RedXBeard <https://github.com/RedXBeard>`_)
