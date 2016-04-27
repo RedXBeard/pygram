@@ -43,8 +43,7 @@ second, much more easy;
 ```bash
 pygram
 ```
-
-## Conributors
+## Collaborators
 - Barbaros Yıldırım ([RedXBeard](https://github.com/RedXBeard))
 - Barış Güler ([hwclass](https://github.com/hwclass))
 - Dünya Değirmenci ([ddegirmenci](https://github.com/ddegirmenci))
