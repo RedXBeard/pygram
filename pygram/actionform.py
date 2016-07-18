@@ -113,7 +113,7 @@ class PyGramForm(ActionFormV2WithMenus):
 
         self.chat_history = self.add(HistoryBox, name="", scroll_exit=True,
                                      editable=True, relx=self.form_width + 2, rely=2,
-                                     max_height=self._max_physical()[0] - 10)
+                                     max_height=self._max_physical()[0] - 10, exit_left=True, exit_right=True)
 
         self.chat_box = self.add(ChatBox, name='{}'.format(self.full_name), scroll_exit=True,
                                  editable=True, max_height=5)

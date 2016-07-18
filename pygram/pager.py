@@ -1,12 +1,12 @@
 # encoding: utf-8
-
+import curses
 import textwrap
 
-from npyscreen import Pager
+from npyscreen import Pager, BufferPager
 from npyscreen import wgwidget
 
 
-class CustomPager(Pager):
+class CustomPager(BufferPager):
     def __init__(self, screen, autowrap=True, center=False, **keywords):
         super().__init__(screen, **keywords)
         self.how_exited = None
@@ -70,18 +70,30 @@ class CustomPager(Pager):
             return False
         line.value = self.display_value(_vl)
         color = 'DEFAULT'
+        bold = False
         if _vl.startswith('->('):
             color = 'GOOD'
+            bold = True
         elif _vl.startswith('->'):
             color = 'CONTROL'
+            bold = True
         elif _vl.find('--New Messages--') != -1:
             line.value = line.display_value(_vl.replace('-', ' '))
             color = 'STANDOUT'
         line.color = color
         line.hidden = False
+        if bold:
+            line.show_bold = True
 
     def h_scroll_line_down(self, ch):
         self.start_display_at += 1
         if self.scroll_exit and self.height > len(self.values) - self.start_display_at:
             self.editing = False
             self.how_exited = wgwidget.EXITED_DOWN
+
+    def h_scroll_line_up(self, ch):
+        if ch == curses.KEY_LEFT:# and self.cursor_line:
+            self.h_show_beginning(ch)
+            super().h_scroll_line_up(ch)
+        else:
+            super().h_scroll_line_up(ch)
